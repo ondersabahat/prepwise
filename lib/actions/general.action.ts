@@ -1,10 +1,9 @@
 "use server";
 
 import { feedbackSchema } from "@/constants";
-import { auth, db } from "@/firebase/admin";
+import { db } from "@/firebase/admin";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
-import { cookies } from "next/headers";
 
 export async function getInterviewsByUserId(
   userId: string
@@ -47,7 +46,7 @@ export async function getInterviewById(id: string): Promise<Interview | null> {
 }
 
 export async function createFeedback(params: CreateFeedbackParams) {
-  const { interviewId, userId, transcript } = params;
+  const { interviewId, userId, transcript, feedbackId } = params;
 
   try {
     const formattedTranscript = transcript
@@ -57,13 +56,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("");
 
-    const {
-      totalScore,
-      categoryScores,
-      strengths,
-      areasForImprovement,
-      finalAssesment,
-    } = await generateObject({
+    const { object } = await generateObject({
       model: google("gemini-2.0-flash-001", {
         structuredOutputs: false,
       }),
@@ -87,17 +80,27 @@ export async function createFeedback(params: CreateFeedbackParams) {
     const feedback = await db.collection("feedback").add({
       interviewId,
       userId,
-      totalScore,
-      categoryScores,
-      strengths,
-      areasForImprovement,
-      finalAssesment,
+      totalScore: object.totalScore,
+      categoryScores: object.categoryScores,
+      strengths: object.strengths,
+      areasForImprovement: object.areasForImprovement,
+      finalAssesment: object.finalAssessment,
       createdAt: new Date().toISOString,
     });
 
+    let feedbackRef;
+
+    if (feedbackId) {
+      feedbackRef = db.collection("feedback").doc(feedbackId);
+    } else {
+      feedbackRef = db.collection("feedback").doc();
+    }
+
+    await feedbackRef.set(feedback);
+
     return {
       success: true,
-      feedbackId: feedback.id,
+      feedbackId: feedbackRef.id,
     };
   } catch (error) {
     console.error("Error saving feedback", error);
@@ -112,16 +115,16 @@ export async function getFeedbackByInterviewId(
 ): Promise<Feedback | null> {
   const { interviewId, userId } = params;
 
-  const feedback = await db
+  const querySnapshot = await db
     .collection("feedback")
     .where("interviewId", "==", interviewId)
     .where("userId", "==", userId)
     .limit(1)
     .get();
 
-  if (feedback.empty) return null;
+  if (querySnapshot.empty) return null;
 
-  const feedbackDoc = feedback.docs[0];
+  const feedbackDoc = querySnapshot.docs[0];
 
   return {
     id: feedbackDoc.id,

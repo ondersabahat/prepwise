@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import Agent from "@/components/Agent";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 
@@ -7,7 +8,7 @@ async function Page() {
   return (
     <>
       <h3 className="">Interview Generation</h3>
-      <Agent userName={user?.name} userId={user?.id} type="generate" />
+      <Agent userName={user?.name!} userId={user?.id} type="generate" />
     </>
   );
 }
