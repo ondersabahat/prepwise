@@ -7,7 +7,7 @@ import DisplayTechIcons from "./DisplayTechIcons";
 import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
 
 export default async function InterviewCard({
-  id,
+  interviewId,
   userId,
   role,
   type,
@@ -15,8 +15,11 @@ export default async function InterviewCard({
   createdAt,
 }: InterviewCardProps) {
   const feedback =
-    userId && id
-      ? await getFeedbackByInterviewId({ interviewId: id, userId: userId! })
+    userId && interviewId
+      ? await getFeedbackByInterviewId({
+          interviewId,
+          userId,
+        })
       : null;
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
   const formattedDate = dayjs(
