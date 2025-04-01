@@ -64,7 +64,11 @@ export default async function InterviewCard({
           <DisplayTechIcons techStack={techstack} />
           <Button className="btn-primary">
             <Link
-              href={feedback ? `/interview/${id}/feedback` : `/interview/${id}`}
+              href={
+                feedback
+                  ? `/interview/${interviewId}/feedback`
+                  : `/interview/${interviewId}`
+              }
             >
               {feedback ? "Check Feedback" : "View"}
             </Link>
